@@ -22,16 +22,25 @@ public class User {
     private final Player player;
     private final String name;
     private final UUID uid;
-    private Loc location = new Loc(), lastLocation = new Loc();
+    private Loc location = new Loc(), lastLocation = new Loc(), l3 = new Loc(), l4 = new Loc(), l5 = new Loc();
     private boolean onGround = false, lastOnGround = false;
     public short transaction = 0;
     private boolean flying = false, allowFlight = false;
     private boolean sprinting = false, hitUnSprint = false;
     private boolean sneaking = false;
-    private boolean inWater = false, inLava = false, underBlock = false, onLadder = false;
+    private boolean onSoulSand = false, inWater = false, inLava = false, underBlock = false, onLadder = false;
     private int tickstp;
     private Loc tploc = new Loc();
     private boolean cantp = false;
+    private double dDeltaX = 0, dDeltaZ = 0;
+
+    public double getdDeltaX() {
+        return dDeltaX;
+    }
+
+    public double getdDeltaZ() {
+        return dDeltaZ;
+    }
 
     public User(Player player) {
         this.player = player;
@@ -78,16 +87,22 @@ public class User {
         if (e instanceof MoveEvent) {
             Loc to = ((MoveEvent) e).getTo();
             Loc from = ((MoveEvent) e).getFrom();
+            dDeltaX = (to.getX() - from.getX()) * (onGround ? getFriction(to) : 0.91f);
+            dDeltaZ = (to.getZ() - from.getZ()) * (onGround ? getFriction(to) : 0.91f);
             try {
                 {
-                    String block = to.blockAt(player, 0, 0, 0).getType().name().toLowerCase();
+                    String block = from.blockAt(player, 0, 0, 0).getType().name().toLowerCase();
                     onLadder = block.contains("vine") || block.contains("ladder");
+                }
+                {
+                    String block = from.blockAt(player, 0, 0, 0).getType().name().toLowerCase();
+                    onSoulSand = block.contains("soul");
                 }
                 inWater = inLava = false;
                 for (double x = -0.3; x <= 0.3; x += 0.3) {
                     for (double y = 0; y <= 1; y++) {
                         for (double z = -0.3; z <= 0.3; z += 0.3) {
-                            String block = to.blockAt(player, x, y, z).getType().name().toLowerCase();
+                            String block = from.blockAt(player, x, y, z).getType().name().toLowerCase();
                             inWater = inWater || block.contains("water");
                             inLava = inLava || block.contains("lava");
                         }
@@ -119,10 +134,22 @@ public class User {
             tickstp = Math.max(tickstp, 2);
             cantp = true;
             tploc = ((TeleportEvent) e).getLoc();
+            if (tploc.getYaw() == location.getYaw()) {
+                tploc.setYaw(-69);
+            }
         }
 
         for (Check c: checks)
             c.onEvent(e);
+    }
+
+    private float getFriction(Loc loc) {
+        try {
+            String block = loc.blockAt(player, 0, -1, 0).getType().name().toLowerCase();
+            return 0.91f * (block.equals("blue_ice") ? 0.989f : block.contains("ice") ? 0.98f : block.contains("slime") ? 0.8f : 0.6f);
+        } catch (Exception ignored) {
+            return 0.91f * 0.6f;
+        }
     }
 
     public void addCheck(Check c) {
@@ -151,8 +178,13 @@ public class User {
 
 
 
-    public float getLandMovementFactor(float speed) {
-        return (player.getWalkSpeed() / 2) * (1.0f + speed * 0.2f) * (sprinting ? 1.3f : 1.0f);
+    public float getLandMovementFactor(float speed, float slow) {
+        double gay = 0.10000000149011612D;
+        gay += gay * 0.20000000298023224D * speed;
+        gay += gay * -0.15000000596046448D * slow;
+        if (isSprinting())
+            gay += gay * 0.30000001192092896D;
+        return (float)gay;
     }
 
     public float getFlySpeed() {
@@ -287,6 +319,14 @@ public class User {
     /*
       getters
              */
+
+    public boolean isOnSoulSand() {
+        return onSoulSand;
+    }
+
+    public boolean isUsingItem() {
+        return player.isBlocking();
+    }
 
     public boolean isSneaking() {
         return sneaking;

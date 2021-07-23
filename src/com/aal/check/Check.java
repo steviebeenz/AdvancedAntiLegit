@@ -60,7 +60,7 @@ public class Check {
     public void flag(String info) {
         vl++;
         for (Player staff: Bukkit.getOnlinePlayers()) {
-            staff.sendMessage(format("&8[&cAAL&8] &c" + user.getName() + "&7 failed &c" + name + ": " + info + " &8(&cx" + Math.round(vl) + "&8)" + (experimental ? " &c&o(EXPERIMENTAL)" : "")));
+            staff.sendMessage(format("&8[&cAAL&8] &c" + user.getName() + "&7 failed &c" + name + "&7: " + info + " &8(&cx" + Math.round(vl) + "&8)" + (experimental ? " &c&o(EXPERIMENTAL)" : "")));
         }
         if (Math.round(vl) >= max) {
             vl = 0;
@@ -71,7 +71,7 @@ public class Check {
     public void flag(double multiplier, String info) {
         vl += multiplier;
         for (Player staff: Bukkit.getOnlinePlayers()) {
-            staff.sendMessage(format("&8[&cAAL&8] &c" + user.getName() + "&7 failed &c" + name + ": " + info + " &8(&cx" + Math.round(vl) + "&8)" + (experimental ? " &c&o(EXPERIMENTAL)" : "")));
+            staff.sendMessage(format("&8[&cAAL&8] &c" + user.getName() + "&7 failed &c" + name + "&7: " + info + " &8(&cx" + Math.round(vl) + "&8)" + (experimental ? " &c&o(EXPERIMENTAL)" : "")));
         }
         if (Math.round(vl) >= max) {
             vl = 0;
