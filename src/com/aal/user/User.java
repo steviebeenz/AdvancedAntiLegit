@@ -3,10 +3,7 @@ package com.aal.user;
 import com.aal.AAL;
 import com.aal.check.Check;
 import com.aal.event.Event;
-import com.aal.event.events.ActionEvent;
-import com.aal.event.events.CAbilityEvent;
-import com.aal.event.events.HitEvent;
-import com.aal.event.events.SAbilityEvent;
+import com.aal.event.events.*;
 import com.aal.util.Loc;
 import com.comphenix.protocol.wrappers.EnumWrappers;
 import org.bukkit.Bukkit;
@@ -28,9 +25,13 @@ public class User {
     private Loc location = new Loc(), lastLocation = new Loc();
     private boolean onGround = false, lastOnGround = false;
     public short transaction = 0;
-    public boolean flying = false, allowFlight = false;
-    public boolean sprinting = false, hitUnSprint = false;
-    public boolean sneaking = false;
+    private boolean flying = false, allowFlight = false;
+    private boolean sprinting = false, hitUnSprint = false;
+    private boolean sneaking = false;
+    private boolean inWater = false, inLava = false, underBlock = false, onLadder = false;
+    private int tickstp;
+    private Loc tploc = new Loc();
+    private boolean cantp = false;
 
     public User(Player player) {
         this.player = player;
@@ -65,15 +66,59 @@ public class User {
         }
 
         if (e instanceof HitEvent) {
-            boolean found = false;
             for (Entity entity: player.getWorld().getEntities()) {
                 if (entity.getEntityId() == ((HitEvent) e).getEntityId()) {
                     if (entity instanceof Player)
                         hitUnSprint = true;
-                    found = true;
                     break;
                 }
             }
+        }
+
+        if (e instanceof MoveEvent) {
+            Loc to = ((MoveEvent) e).getTo();
+            Loc from = ((MoveEvent) e).getFrom();
+            try {
+                {
+                    String block = to.blockAt(player, 0, 0, 0).getType().name().toLowerCase();
+                    onLadder = block.contains("vine") || block.contains("ladder");
+                }
+                inWater = inLava = false;
+                for (double x = -0.3; x <= 0.3; x += 0.3) {
+                    for (double y = 0; y <= 1; y++) {
+                        for (double z = -0.3; z <= 0.3; z += 0.3) {
+                            String block = to.blockAt(player, x, y, z).getType().name().toLowerCase();
+                            inWater = inWater || block.contains("water");
+                            inLava = inLava || block.contains("lava");
+                        }
+                    }
+                }
+                underBlock = false;
+                for (double x = -0.3; x <= 0.3; x += 0.3) {
+                    for (double y = 1; y <= 2; y++) {
+                        for (double z = -0.3; z <= 0.3; z += 0.3) {
+                            underBlock = underBlock || from.blockAt(player, x, y, z).getType().isSolid();
+                        }
+                    }
+                }
+            } catch (Exception ignored) { }
+
+            if (to.distance(tploc) > 0.5 && tickstp > 0 && !cantp) {
+                tickstp = 0;
+            }
+
+            if (cantp) {
+                tickstp++;
+                if (to.distance(tploc) < 0.1) {
+                    cantp = false;
+                }
+            }
+        }
+
+        if (e instanceof TeleportEvent) {
+            tickstp = Math.max(tickstp, 2);
+            cantp = true;
+            tploc = ((TeleportEvent) e).getLoc();
         }
 
         for (Check c: checks)
@@ -94,8 +139,8 @@ public class User {
         Bukkit.getScheduler().runTask(AAL.getInstance(), new BukkitRunnable() {
             @Override
             public void run() {
-                player.kickPlayer(ChatColor.translateAlternateColorCodes('&', "&8[&cAAL&8] &c" + reason));
-                Bukkit.broadcastMessage("&8[&cAAL&8] &c" + player.getName() + "&7 was kicked for &c" + reason);
+                //player.kickPlayer(ChatColor.translateAlternateColorCodes('&', "&8[&cAAL&8] &c" + reason));
+                Bukkit.broadcastMessage(ChatColor.translateAlternateColorCodes('&', "&8[&cAAL&8] &c" + player.getName() + "&7 was kicked for &c" + reason));
             }
         });
     }
@@ -199,6 +244,30 @@ public class User {
       setters
              */
 
+    public Loc getTploc() {
+        return tploc;
+    }
+
+    public boolean isInWater() {
+        return inWater;
+    }
+
+    public boolean isInLava() {
+        return inLava;
+    }
+
+    public boolean isOnLadder() {
+        return onLadder;
+    }
+
+    public boolean isUnderBlock() {
+        return underBlock;
+    }
+
+    public boolean hasTeleported() {
+        return tickstp > 0;
+    }
+
     public void setLastOnGround(boolean lastOnGround) {
         this.lastOnGround = lastOnGround;
     }
@@ -218,6 +287,22 @@ public class User {
     /*
       getters
              */
+
+    public boolean isSneaking() {
+        return sneaking;
+    }
+
+    public boolean isSprinting() {
+        return sprinting;
+    }
+
+    public boolean isFlying() {
+        return flying;
+    }
+
+    public boolean isAllowFlight() {
+        return allowFlight;
+    }
 
     public boolean wasOnGround() {
         return lastOnGround;
