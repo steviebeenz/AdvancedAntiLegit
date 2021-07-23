@@ -1,0 +1,7 @@
+bancmd: "tempban %player -s 30d Fair Disadvantage"
+
+checks:
+  legitmove:
+    max: 10
+    punishment: kick
+    experimental: true
