@@ -13,6 +13,9 @@ public class LegitMove extends Check {
     double lastX, lastY, lastZ;
     float yaw;
     boolean resetY = false;
+    long lastWaterBounce = System.currentTimeMillis();
+    boolean legitJump = true;
+    boolean badOnGround = false;
 
     float radToIndex = roundToFloat(651.8986469044033D);
     boolean fastMath = false;
@@ -82,6 +85,8 @@ public class LegitMove extends Check {
         double jumpHeight = 0.42f + 0.1 * user.getJumpLevel();
         if (air == 1 && deltaY > 0)
             motionY = jumpHeight;
+        if (System.currentTimeMillis() - lastWaterBounce < 5000 || !legitJump)
+            legit = 0;
         if (!user.isInWater() || user.isFlying()) {
             if (!user.isInLava() || user.isFlying()) {
                 float friction = 0.91f;
@@ -132,12 +137,120 @@ public class LegitMove extends Check {
                     double diff = Math.abs(deltaY - motionY);
                     boolean validUnderBlock = user.isUnderBlock() && ((deltaY == 0.20000004768371582 && air == 1) || (deltaY == -0.12160004615783748 && ground == 1));
                     if (diff > 1E-13 && !validUnderBlock) {
+                        if (air == 1) legitJump = false;
                         legit = Math.max(legit - 3, 0);
+                    } else if (deltaY != 0) {
+                        if (air == 1) legitJump = !badOnGround;
+                        if (++legit > 10) {
+                            legit = Math.min(legit, 15);
+                            flag("moved legitimately");
+                        }
+                    }
+                }
+
+                {
+                    boolean serverGround = Util.isCollided(user.getPlayer(), e.getTo().getX(), e.getTo().getY() - 1, e.getTo().getZ());
+                    if (!serverGround && onGround) {
+                        badOnGround = true;
+                        legit = 0;
+                    } else {
+                        badOnGround = false;
+                    }
+                }
+            } else {
+                strafe = forward = 0f;
+                motionX = lastDeltaX * 0.5;
+                motionY = lastDeltaY * 0.5 - 0.02;
+                motionZ = lastDeltaZ * 0.5;
+
+                if (Util.isCollided(user.getPlayer(), lastX + motionX, lastY, lastZ + motionZ))
+                    motionY = 0.30000001192092896;
+
+                if (deltaY > motionY + 0.001)
+                    this.motionY += 0.03999999910593033D;
+
+                moveFlying(strafe, forward, 0.02F);
+                moveEntity();
+
+                {
+                    double diff = hypot(deltaX - motionX, deltaZ - motionZ);
+                    if (diff > 0.05) {
+                        legit = Math.max(legit - 2, 0);
                     } else if (deltaY != 0) {
                         if (++legit > 10) {
                             legit = Math.min(legit, 15);
                             flag("moved legitimately");
                         }
+                    }
+                }
+
+                {
+                    double diff = Math.abs(deltaY - motionY);
+                    if (diff > 1E-9) {
+                        legit = Math.max(legit - 2, 0);
+                    } else if (deltaY != 0) {
+                        if (++legit > 10) {
+                            legit = Math.min(legit, 15);
+                            flag("moved legitimately");
+                        }
+                    }
+                }
+            }
+        } else {
+            strafe = forward = 0f;
+            float f1 = 0.8F;
+            float f2 = 0.02F;
+            float f3 = user.getDepthStrider();
+
+            if (f3 > 3.0F)
+            {
+                f3 = 3.0F;
+            }
+
+            if (!lastOnGround)
+                f3 *= 0.5F;
+
+            if (f3 > 0.0F)
+            {
+                f1 += (0.54600006F - f1) * f3 / 3.0F;
+                f2 += (user.getLandMovementFactor(user.getSpeedLevel(), user.getSlowLevel()) - f2) * f3 / 3.0F;
+            }
+
+            motionX = lastDeltaX * f1;
+            motionY = lastDeltaY * 0.800000011920929D - 0.02D;
+            motionZ = lastDeltaZ * f1;
+
+            if (Util.isCollided(user.getPlayer(), lastX + motionX, lastY, lastZ + motionZ))
+                this.motionY = 0.30000001192092896D;
+
+            if (deltaY > motionY + 0.001)
+                this.motionY += 0.03999999910593033D;
+
+            moveFlying(strafe, forward, f2);
+            moveEntity();
+
+            {
+                double diff = hypot(deltaX - motionX, deltaZ - motionZ);
+                if (diff > 0.05) {
+                    legit = Math.max(legit - 2, 0);
+                } else if (deltaY != 0) {
+                    if (++legit > 10) {
+                        legit = Math.min(legit, 15);
+                        flag("moved legitimately");
+                    }
+                }
+            }
+
+            {
+                double diff = Math.abs(deltaY - motionY);
+                if (diff > 1E-9) {
+                    if (diff > 0.2)
+                        lastWaterBounce = System.currentTimeMillis();
+                    legit = Math.max(legit - 2, 0);
+                } else if (deltaY != 0) {
+                    if (++legit > 10) {
+                        legit = Math.min(legit, 15);
+                        flag("moved legitimately");
                     }
                 }
             }

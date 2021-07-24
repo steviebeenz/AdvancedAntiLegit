@@ -8,6 +8,7 @@ import com.aal.util.Loc;
 import com.comphenix.protocol.wrappers.EnumWrappers;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
@@ -87,8 +88,8 @@ public class User {
         if (e instanceof MoveEvent) {
             Loc to = ((MoveEvent) e).getTo();
             Loc from = ((MoveEvent) e).getFrom();
-            dDeltaX = (to.getX() - from.getX()) * (onGround ? getFriction(to) : 0.91f);
-            dDeltaZ = (to.getZ() - from.getZ()) * (onGround ? getFriction(to) : 0.91f);
+            dDeltaX = (to.getX() - from.getX()) * (inLava ? 0.5 : onGround ? getFriction(to) : 0.91f);
+            dDeltaZ = (to.getZ() - from.getZ()) * (inLava ? 0.5 : onGround ? getFriction(to) : 0.91f);
             try {
                 {
                     String block = from.blockAt(player, 0, 0, 0).getType().name().toLowerCase();
@@ -189,6 +190,10 @@ public class User {
 
     public float getFlySpeed() {
         return player.getFlySpeed();
+    }
+
+    public float getDepthStrider() {
+        return player.getInventory().getBoots() == null ? 0f : player.getInventory().getBoots().getEnchantmentLevel(Enchantment.DEPTH_STRIDER);
     }
 
     public float getSlowFallLevel() {
