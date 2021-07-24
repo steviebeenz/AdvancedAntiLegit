@@ -86,6 +86,8 @@ public class PacketListener implements Listener {
             CAbilityEvent e = new CAbilityEvent(player, packet.getBooleans().read(2), packet.getBooleans().read(1));
             user.onEvent(e);
         }
+        PacketReceiveEvent e = new PacketReceiveEvent(player, packet);
+        user.onEvent(e);
     }
 
     public void onPacketSend(Player player, PacketContainer packet) {

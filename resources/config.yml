@@ -1,7 +1,23 @@
 bancmd: "tempban %player -s 30d Fair Disadvantage"
 
 checks:
+  aim:
+    max: 10
+    punishment: kick
+    experimental: true
+  aura:
+    max: 10
+    punishment: kick
+    experimental: true
+  clicker:
+    max: 10
+    punishment: kick
+    experimental: true
   legitmove:
+    max: 10
+    punishment: kick
+    experimental: true
+  packets:
     max: 10
     punishment: kick
     experimental: true
