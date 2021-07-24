@@ -120,6 +120,10 @@ public class LegitMove extends Check {
             forward *= 0.2f;
         }
 
+        if (user.isInsideVehicle()) {
+            return;
+        }
+
         if (user.isSprinting() && user.isUsingItem())
             return;
         if (user.isSprinting() && user.isSneaking())

@@ -198,7 +198,9 @@ public class User {
       utils
            */
 
-
+    public boolean isInsideVehicle() {
+        return player.isInsideVehicle();
+    }
 
     public float getLandMovementFactor(float speed, float slow) {
         double gay = 0.10000000149011612D;
