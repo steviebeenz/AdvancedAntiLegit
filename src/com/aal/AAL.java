@@ -17,8 +17,12 @@ public final class AAL extends JavaPlugin {
 
     public FileConfiguration config;
 
+    private static int version = 0;
+
     @Override
     public void onEnable() {
+        version = Integer.parseInt(Bukkit.getServer().getClass().getPackage().getName().substring(Bukkit.getServer().getClass().getPackage().getName().lastIndexOf('.') + 1).replace("v", "").replaceFirst("_", "").split("_")[0]);
+
         instance     = this;
         userManager  = new UserManager();
         checkManager = new CheckManager();
@@ -52,5 +56,9 @@ public final class AAL extends JavaPlugin {
 
     public static CheckManager getCheckManager() {
         return checkManager;
+    }
+
+    public static int getVersion() {
+        return version;
     }
 }

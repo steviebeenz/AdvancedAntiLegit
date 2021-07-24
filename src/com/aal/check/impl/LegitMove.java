@@ -3,6 +3,7 @@ package com.aal.check.impl;
 import com.aal.check.Check;
 import com.aal.event.events.MoveEvent;
 import com.aal.util.Loc;
+import com.aal.util.Util;
 
 public class LegitMove extends Check {
     double deltaX, deltaY, deltaZ, delta, lastDeltaX, lastDeltaY, lastDeltaZ, lastDelta;
@@ -11,6 +12,7 @@ public class LegitMove extends Check {
     double motionX, motionY, motionZ;
     double lastX, lastY, lastZ;
     float yaw;
+    boolean resetY = false;
 
     float radToIndex = roundToFloat(651.8986469044033D);
     boolean fastMath = false;
@@ -53,6 +55,13 @@ public class LegitMove extends Check {
         motionY = (lastDeltaY - 0.08) * 0.9800000190734863;
         motionZ = lastDeltaZ * (lastOnGround ? getFriction(e.getFrom()) : 0.91f);
 
+        if (Math.abs(motionX) < 0.005)
+            motionX = 0;
+        if (Math.abs(motionY) < 0.005)
+            motionY = 0;
+        if (Math.abs(motionZ) < 0.005)
+            motionZ = 0;
+
         int roundDelta = (int) Math.round(delta * 1000000);
         if (roundDelta % 10 == 0 && delta > 0.28) {
             return;
@@ -70,6 +79,9 @@ public class LegitMove extends Check {
         forward *= 0.98f;
 
         float airSpeed = 0.02f;
+        double jumpHeight = 0.42f + 0.1 * user.getJumpLevel();
+        if (air == 1 && deltaY > 0)
+            motionY = jumpHeight;
         if (!user.isInWater() || user.isFlying()) {
             if (!user.isInLava() || user.isFlying()) {
                 float friction = 0.91f;
@@ -101,21 +113,39 @@ public class LegitMove extends Check {
 
                 moveEntity();
 
-                double diff = hypot(deltaX - motionX, deltaZ - motionZ);
-                if (diff < 1E-8 && (strafe != 0 || forward != 0)) {
-                    if (++legit > 10) {
-                        legit = Math.min(legit, 15);
-                        flag("moved legitimately");
+                {
+                    double diff = hypot(deltaX - motionX, deltaZ - motionZ);
+                    if (diff < 1E-8 && (strafe != 0 || forward != 0)) {
+                        if (++legit > 10) {
+                            legit = Math.min(legit, 15);
+                            flag("moved legitimately");
+                        }
+                    } else {
+                        if (legit > 10)
+                            flag("moved legitimately");
+                        fastMath = !fastMath;
+                        legit = Math.max(legit - 1, 0);
                     }
-                } else {
-                    if (legit > 10)
-                        flag("moved legitimately");
-                    fastMath = !fastMath;
-                    legit = Math.max(legit - 1, 0);
+                }
+
+                {
+                    double diff = Math.abs(deltaY - motionY);
+                    boolean validUnderBlock = user.isUnderBlock() && ((deltaY == 0.20000004768371582 && air == 1) || (deltaY == -0.12160004615783748 && ground == 1));
+                    if (diff > 1E-13 && !validUnderBlock) {
+                        legit = Math.max(legit - 3, 0);
+                    } else if (deltaY != 0) {
+                        if (++legit > 10) {
+                            legit = Math.min(legit, 15);
+                            flag("moved legitimately");
+                        }
+                    }
                 }
             }
         }
-
+        if (resetY) {
+            resetY = false;
+            deltaY = 0;
+        }
     }
 
     public void moveFlying(float strafe, float forward, float moveSpeed) {
@@ -144,6 +174,25 @@ public class LegitMove extends Check {
         double predictedX = lastX + motionX;
         double predictedY = lastY + motionY;
         double predictedZ = lastZ + motionZ;
+        if (Util.isCollided(user.getPlayer(), predictedX, lastY, lastZ)) {
+            if (predictedX > lastZ)
+                predictedX = Math.ceil(predictedX) - 0.03f;
+            else
+                predictedX = Math.floor(predictedX) + 0.03f;
+        }
+        if (Util.isCollided(user.getPlayer(), lastX, predictedY, lastZ)) {
+            if (lastY > predictedY)
+                predictedY = Math.ceil(predictedY);
+            else
+                predictedY = Math.ceil(predictedY) - 0.8f;
+            resetY = true;
+        }
+        if (Util.isCollided(user.getPlayer(), lastX, lastY, predictedZ)) {
+            if (predictedZ > lastZ)
+                predictedZ = Math.ceil(predictedZ) - 0.03f;
+            else
+                predictedZ = Math.floor(predictedZ) + 0.03f;
+        }
         motionX = predictedX - lastX;
         motionY = predictedY - lastY;
         motionZ = predictedZ - lastZ;
