@@ -25,6 +25,10 @@ public class Check {
         this.experimental = AAL.getInstance().config.getBoolean("checks." + name.toLowerCase() + ".max");
     }
 
+    public String getName() {
+        return name;
+    }
+
     public void onMove(MoveEvent e) {
 
     }

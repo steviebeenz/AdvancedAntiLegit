@@ -2,6 +2,7 @@ package com.aal.user;
 
 import com.aal.AAL;
 import com.aal.check.Check;
+import com.aal.check.impl.LegitMove;
 import com.aal.event.Event;
 import com.aal.event.events.*;
 import com.aal.util.Loc;
@@ -28,12 +29,14 @@ public class User {
     public short transaction = 0;
     private boolean flying = false, allowFlight = false;
     private boolean sprinting = false, hitUnSprint = false;
-    private boolean sneaking = false;
-    private boolean onSoulSand = false, inWater = false, inLava = false, underBlock = false, onLadder = false;
+    private boolean sneaking = false, realSneaking = false;
+    private boolean onSoulSand = false, inWeb = false, inWater = false, inLava = false, underBlock = false, onLadder = false;
     private int tickstp;
     private Loc tploc = new Loc();
     private boolean cantp = false;
     private double dDeltaX = 0, dDeltaZ = 0;
+    private boolean tickPassed = false;
+    private long lastFlying = System.currentTimeMillis();
 
     public double getdDeltaX() {
         return dDeltaX;
@@ -70,8 +73,16 @@ public class User {
                 hitUnSprint = false;
             } else if (action == EnumWrappers.PlayerAction.START_SNEAKING) {
                 sneaking = true;
+                if (System.currentTimeMillis() - lastFlying < 5)
+                    for (Check c: checks)
+                        if (c.getName().equals("LegitMove"))
+                            ((LegitMove)c).legit = 0;
             } else if (action == EnumWrappers.PlayerAction.STOP_SNEAKING) {
                 sneaking = false;
+                if (System.currentTimeMillis() - lastFlying < 5)
+                    for (Check c: checks)
+                        if (c.getName().equals("LegitMove"))
+                            ((LegitMove)c).legit = 0;
             }
         }
 
@@ -86,10 +97,19 @@ public class User {
         }
 
         if (e instanceof MoveEvent) {
+            lastFlying = System.currentTimeMillis();
             Loc to = ((MoveEvent) e).getTo();
             Loc from = ((MoveEvent) e).getFrom();
-            dDeltaX = (to.getX() - from.getX()) * (inLava ? 0.5 : onGround ? getFriction(to) : 0.91f);
-            dDeltaZ = (to.getZ() - from.getZ()) * (inLava ? 0.5 : onGround ? getFriction(to) : 0.91f);
+            dDeltaX = (to.getX() - from.getX()) * (inLava ? 0.5 : onGround ? getFriction(from) : 0.91f);
+            dDeltaZ = (to.getZ() - from.getZ()) * (inLava ? 0.5 : onGround ? getFriction(from) : 0.91f);
+            if (onSoulSand) {
+                dDeltaX *= 0.4;
+                dDeltaZ *= 0.4;
+            }
+            if (inWeb) {
+                dDeltaX = 0.0D;
+                dDeltaZ = 0.0D;
+            }
             try {
                 {
                     String block = from.blockAt(player, 0, 0, 0).getType().name().toLowerCase();
@@ -99,13 +119,14 @@ public class User {
                     String block = from.blockAt(player, 0, 0, 0).getType().name().toLowerCase();
                     onSoulSand = block.contains("soul");
                 }
-                inWater = inLava = false;
+                inWater = inLava = inWeb = false;
                 for (double x = -0.3; x <= 0.3; x += 0.3) {
                     for (double y = 0; y <= 1; y++) {
                         for (double z = -0.3; z <= 0.3; z += 0.3) {
                             String block = from.blockAt(player, x, y, z).getType().name().toLowerCase();
                             inWater = inWater || block.contains("water");
                             inLava = inLava || block.contains("lava");
+                            inWeb = inWeb || block.contains("web");
                         }
                     }
                 }
@@ -189,7 +210,7 @@ public class User {
     }
 
     public float getFlySpeed() {
-        return player.getFlySpeed();
+        return player.getFlySpeed() / 2f;
     }
 
     public float getDepthStrider() {
@@ -283,6 +304,10 @@ public class User {
 
     public Loc getTploc() {
         return tploc;
+    }
+
+    public boolean isInWeb() {
+        return inWeb;
     }
 
     public boolean isInWater() {

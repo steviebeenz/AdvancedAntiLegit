@@ -8,4 +8,9 @@ public class Util {
         if (AAL.getVersion() == 18) return Util18.isCollided(p, x, y, z);
         return false;
     }
+
+    public static double fixY(Player p, double x, double y, double z) {
+        if (AAL.getVersion() == 18) return Util18.fixY(p, x, y, z);
+        return y;
+    }
 }
