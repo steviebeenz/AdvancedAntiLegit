@@ -5,6 +5,7 @@ import com.aal.event.events.HitEvent;
 import com.aal.event.events.MoveEvent;
 import com.aal.event.events.PacketReceiveEvent;
 import com.aal.util.MovingList;
+import com.comphenix.protocol.PacketType;
 
 public class Aura extends Check {
     MovingList<Boolean> landedHits = new MovingList<>(100);
@@ -26,12 +27,14 @@ public class Aura extends Check {
             for (boolean hit: landedHits.getData())
                 if (hit)
                     accuracy++;
-            debug("accuracy: " + accuracy);
+            if (accuracy < 95)
+                flag("low accuracy: " + accuracy);
         }
     }
 
     @Override
     public void onPacketReceive(PacketReceiveEvent e) {
-        landedHits.add(false);
+        if (e.packet.getType() == PacketType.Play.Client.ARM_ANIMATION)
+            landedHits.add(false);
     }
 }

@@ -18,7 +18,8 @@ public class MovingList<T> {
     }
 
     public void setLast(T element) {
-        data.set(data.size() - 1, element);
+        if (data.size() > 0)
+            data.set(data.size() - 1, element);
     }
 
     public void clear() {
