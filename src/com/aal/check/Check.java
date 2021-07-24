@@ -2,9 +2,7 @@ package com.aal.check;
 
 import com.aal.AAL;
 import com.aal.event.Event;
-import com.aal.event.events.HitEvent;
-import com.aal.event.events.MoveEvent;
-import com.aal.event.events.PacketReceiveEvent;
+import com.aal.event.events.*;
 import com.aal.user.User;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -43,6 +41,14 @@ public class Check {
 
     }
 
+    public void onVelocity(VelocityEvent e) {
+
+    }
+
+    public void onTransaction(TransactionEvent e) {
+
+    }
+
     public void onEvent(Event e) {
         if (e instanceof MoveEvent) {
             onMove((MoveEvent) e);
@@ -52,6 +58,12 @@ public class Check {
         }
         if (e instanceof PacketReceiveEvent) {
             onPacketReceive((PacketReceiveEvent) e);
+        }
+        if (e instanceof VelocityEvent) {
+            onVelocity((VelocityEvent) e);
+        }
+        if (e instanceof TransactionEvent) {
+            onTransaction((TransactionEvent) e);
         }
     }
 

@@ -3,6 +3,7 @@ package com.aal.util;
 public class Velo {
     private double x, y, z;
     private int id;
+    private int received = 2;
 
     public Velo(double x, double y, double z, int id) {
         this.x = x;
@@ -25,5 +26,13 @@ public class Velo {
 
     public int getId() {
         return id;
+    }
+
+    public void setReceived(int received) {
+        this.received = received;
+    }
+
+    public int getReceived() {
+        return received;
     }
 }

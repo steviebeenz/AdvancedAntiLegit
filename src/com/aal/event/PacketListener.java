@@ -69,7 +69,7 @@ public class PacketListener implements Listener {
             user.onEvent(e);
         }
         if (packet.getType() == PacketType.Play.Client.TRANSACTION || packet.getType() == PacketType.Play.Client.PONG) {
-            TransactionEvent e = new TransactionEvent(player, packet.getIntegers().read(0));
+            TransactionEvent e = new TransactionEvent(player, packet.getShorts().read(0));
             user.onEvent(e);
         }
         if (packet.getType() == PacketType.Play.Client.ENTITY_ACTION) {

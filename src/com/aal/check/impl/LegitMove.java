@@ -2,10 +2,14 @@ package com.aal.check.impl;
 
 import com.aal.check.Check;
 import com.aal.event.events.MoveEvent;
+import com.aal.event.events.TransactionEvent;
+import com.aal.event.events.VelocityEvent;
 import com.aal.util.Loc;
 import com.aal.util.Util;
-import org.bukkit.Material;
+import com.aal.util.Velo;
 import org.bukkit.potion.PotionEffectType;
+
+import java.util.ArrayList;
 
 public class LegitMove extends Check {
     double deltaX, deltaY, deltaZ, delta, lastDeltaX, lastDeltaY, lastDeltaZ, lastDelta;
@@ -32,11 +36,28 @@ public class LegitMove extends Check {
 
     long lastTimerFlag = System.currentTimeMillis();
 
+    ArrayList<Velo> velocities = new ArrayList<>();
+
     public LegitMove() {
         for (int i = 0; i < 65536; ++i)
             SIN_TABLE[i] = (float)Math.sin((double)i * Math.PI * 2.0D / 65536.0D);
         for (int j = 0; j < SIN_TABLE_FAST.length; ++j)
             SIN_TABLE_FAST[j] = roundToFloat(Math.sin((double)j * Math.PI * 2.0D / 4096.0D));
+    }
+
+    @Override
+    public void onVelocity(VelocityEvent e) {
+        velocities.add(e.getVelocity());
+    }
+
+    @Override
+    public void onTransaction(TransactionEvent e) {
+        for (Velo velo: velocities) {
+            if (velo.getId() == e.getId()) {
+                velo.setReceived(1);
+                break;
+            }
+        }
     }
 
     @Override
@@ -88,6 +109,37 @@ public class LegitMove extends Check {
         deltaZ = e.getTo().getZ() - e.getFrom().getZ();
         delta  = hypot(deltaX, deltaZ);
 
+        {
+            for (Velo velo: velocities) {
+                float friction = 0.91f;
+
+                if (lastOnGround)
+                    friction = getFriction(e.getFrom());
+
+                float f = 0.16277136F / (friction * friction * friction);
+                float moveSpeed = lastOnGround ? user.getLandMovementFactor(user.getSpeedLevel(), user.getSlowLevel()) * f : user.isFlying() ? user.isSprinting() ? user.getFlySpeed() * 2f : user.getFlySpeed() : user.isSprinting() ? (float)((double) 0.02f + (double) 0.02f * 0.3D) : (float)(double)0.02f;
+
+                double diffX = velo.getX() - deltaX;
+                double diffY = velo.getY() - deltaY;
+                double diffZ = velo.getZ() - deltaZ;
+                double diff = Math.sqrt(diffX * diffX + diffY * diffY + diffZ * diffZ);
+                if (diff < moveSpeed) {
+                    flag("took velocity");
+                    velocities.remove(velo);
+                    break;
+                }
+            }
+        }
+
+        for (Velo velo: velocities) {
+            if (velo.getReceived() == 0) {
+                velocities.remove(velo);
+                break;
+            } else if (velo.getReceived() == 1) {
+                velo.setReceived(0);
+            }
+        }
+
         motionX = lastDeltaX * (lastOnGround ? getFriction(e.getFrom()) : 0.91f);
         motionY = (lastDeltaY - 0.08) * 0.9800000190734863;
         motionZ = lastDeltaZ * (lastOnGround ? getFriction(e.getFrom()) : 0.91f);
@@ -107,11 +159,6 @@ public class LegitMove extends Check {
         if (System.currentTimeMillis() - lastTimerFlag < 10000)
             return;
 
-        int roundDelta = (int) Math.round(delta * 1000000);
-        if (roundDelta % 10 == 0 && delta > 0.28) {
-            return;
-        }
-
         float strafe = e.getStrafe();
         float forward = e.getForward();
 
@@ -120,9 +167,8 @@ public class LegitMove extends Check {
             forward *= 0.2f;
         }
 
-        if (user.isInsideVehicle()) {
+        if (user.isInsideVehicle())
             return;
-        }
 
         if (user.isSprinting() && user.isUsingItem())
             return;
