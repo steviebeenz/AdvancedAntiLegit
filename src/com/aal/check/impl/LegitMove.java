@@ -17,6 +17,9 @@ public class LegitMove extends Check {
     boolean legitJump = true;
     boolean badOnGround = false;
 
+    long flying = System.currentTimeMillis(), lastFlying = System.currentTimeMillis();
+    double balance = 0;
+
     float radToIndex = roundToFloat(651.8986469044033D);
     boolean fastMath = false;
     static final float[] SIN_TABLE_FAST = new float[4096];
@@ -33,6 +36,11 @@ public class LegitMove extends Check {
 
     @Override
     public void onMove(MoveEvent e) {
+        lastFlying = flying;
+        flying = System.currentTimeMillis();
+        double delay = flying - lastFlying;
+
+
         lastX = e.getFrom().getX();
         lastY = e.getFrom().getY();
         lastZ = e.getFrom().getZ();
@@ -95,7 +103,7 @@ public class LegitMove extends Check {
                     friction = getFriction(e.getFrom());
 
                 float f = 0.16277136F / (friction * friction * friction);
-                float moveSpeed = onGround ? user.getLandMovementFactor(user.getSpeedLevel(), user.getSlowLevel()) * f : user.isSprinting() ? 0.026f : (float)((double) airSpeed + (double) airSpeed * 0.3D);
+                float moveSpeed = onGround ? user.getLandMovementFactor(user.getSpeedLevel(), user.getSlowLevel()) * f : user.isFlying() ? user.isSprinting() ? user.getFlySpeed() : user.getFlySpeed() / 2f : user.isSprinting() ? 0.026f : (float)((double) airSpeed + (double) airSpeed * 0.3D);
 
                 moveFlying(strafe, forward, moveSpeed);
 
